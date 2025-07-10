@@ -26,5 +26,5 @@ providers:
 
 tls:
   certificates:
-    - certFile: /etc/traefik/certs/laravel-sail-skeleton.test.cert
-      keyFile: /etc/traefik/certs/laravel-sail-skeleton.test.key
+    - certFile: /etc/traefik/certs/{{ env "APP_SERVICE" }}.cert
+      keyFile: /etc/traefik/certs/{{ env "APP_SERVICE" }}.key

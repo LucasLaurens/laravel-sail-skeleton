@@ -1,5 +1,5 @@
 services:
-  laravel-sail-skeleton.test:
+  app:
     build:
       context: './docker/8.4'
       dockerfile: Dockerfile
@@ -12,7 +12,7 @@ services:
       - '5173:5173'
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.laravel.rule=Host(`app.laravel-sail-skeleton.test`)"
+      - "traefik.http.routers.laravel.rule=Host(`app.${APP_SERVICE}`)"
       - "traefik.http.routers.laravel.entrypoints=websecure"
       - "traefik.http.routers.laravel.tls=true"
       - "traefik.http.services.laravel.loadbalancer.server.port=80"
@@ -66,6 +66,8 @@ services:
 
   traefik:
     image: traefik:latest
+    environment:
+      APP_SERVICE: ${APP_SERVICE}
     command:
       - "--configFile=/etc/traefik/traefik.yml"
     ports:
@@ -79,7 +81,7 @@ services:
       - sail
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.laravel-sail-skeleton.test`)"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${APP_SERVICE}`)"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls=true"
       - "traefik.http.routers.traefik.service=api@internal"
