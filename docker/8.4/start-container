@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+set -e
+
+echo "🚀 Start container..."
+
+# 🛡 Validate supervisor user
+if [ "$SUPERVISOR_PHP_USER" != "root" ] && [ "$SUPERVISOR_PHP_USER" != "sail" ]; then
+    echo "❌ SUPERVISOR_PHP_USER must be 'sail' or 'root'."
+    exit 1
+fi
+
+# 👤 Update user ID if specified
+if [ -n "$WWWUSER" ]; then
+    echo "🔧 Setting sail user ID to $WWWUSER"
+    usermod -u "$WWWUSER" sail || true
+fi
+
+# 📁 Ensure Composer directory exists
+mkdir -p /.composer
+chmod -R ug+rw /.composer
+
+# ⏳ Wait for MySQL to be ready
+echo "Waiting for MySQL..."
+echo "DB_HOST: $DB_HOST"
+echo "DB_USERNAME: $DB_USERNAME"
+until mysqladmin ping -h "$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD" --silent; do
+  echo "Still waiting for MySQL..."
+  sleep 2
+done
+
+if ! php artisan migrate:status --no-ansi | grep -q '| Y'; then
+  echo "⚙️ First-time Laravel setup running..."
+
+  php artisan key:generate --force
+  echo "✅ Laravel app key has been generated successfully"
+
+  php artisan migrate:fresh --seed
+  echo "✅ Migrations has been run successfully"
+fi
+
+if [ ! -d node_modules ]; then
+    echo "📦 Download node modules package"
+    npm install
+    npm run build
+fi
+
+# ▶️ Run command if passed as arguments
+if [ "$#" -gt 0 ]; then
+    echo "▶️ Executing passed command: $@"
+    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+        exec "$@"
+    else
+        exec gosu "$WWWUSER" "$@"
+    fi
+else
+    echo "📡 Starting supervisord..."
+    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+fi
