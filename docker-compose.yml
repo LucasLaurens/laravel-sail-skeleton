@@ -1,95 +1,99 @@
 services:
-  app:
-    build:
-      context: './docker/8.4'
-      dockerfile: Dockerfile
-      args:
-        WWWGROUP: '${WWWGROUP}'
-    image: 'sail-8.4/app'
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-    ports:
-      - '5173:5173'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.laravel.rule=Host(`app.${APP_SERVICE}`)"
-      - "traefik.http.routers.laravel.entrypoints=websecure"
-      - "traefik.http.routers.laravel.tls=true"
-      - "traefik.http.services.laravel.loadbalancer.server.port=80"
-    environment:
-      WWWUSER: '${WWWUSER}'
-      LARAVEL_SAIL: 1
-      XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-      XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-      IGNITION_LOCAL_SITES_PATH: '${PWD}'
-    volumes:
-      - '.:/var/www/html'
-      - './certs:/home/sail/certs:ro'
-    networks:
-      - sail
-    depends_on:
-      - mysql
+    app:
+        build:
+            context: './docker/8.4'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: sail-8.4/app
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '5173:5173'
+        labels:
+          - traefik.enable=true
+          - "traefik.http.routers.back.rule=Host(`app.${APP_SERVICE}`)"
+          - traefik.http.routers.back.entrypoints=websecure
+          - traefik.http.routers.back.tls=true
+          - traefik.http.services.back.loadbalancer.server.port=80
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            DB_HOST: '${DB_HOST}'
+            DB_DATABASE: '${DB_DATABASE}'
+            DB_USERNAME: '${DB_USERNAME}'
+            DB_PASSWORD: '${DB_PASSWORD}'
+        volumes:
+            - '.:/var/www/html'
+            - './certs:/home/sail/certs:ro'
+        networks:
+            - sail
+        depends_on:
+            - mysql
 
-  mysql:
-    image: 'mysql/mysql-server:8.0'
-    ports:
-      - '${FORWARD_DB_PORT:-3306}:3306'
-    environment:
-      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
-      MYSQL_ROOT_HOST: '%'
-      MYSQL_DATABASE: '${DB_DATABASE}'
-      MYSQL_USER: '${DB_USERNAME}'
-      MYSQL_PASSWORD: '${DB_PASSWORD}'
-      MYSQL_ALLOW_EMPTY_PASSWORD: 1
-    volumes:
-      - 'sail-mysql:/var/lib/mysql'
-      - './docker/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
-    networks:
-      - sail
-    healthcheck:
-      test: [CMD, mysqladmin, ping, '-p${DB_PASSWORD}']
-      retries: 3
-      timeout: 5s
+    mysql:
+        image: 'mysql/mysql-server:8.0'
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_ROOT_HOST: '%'
+            MYSQL_DATABASE: '${DB_DATABASE}'
+            MYSQL_USER: '${DB_USERNAME}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        volumes:
+            - 'sail-mysql:/var/lib/mysql'
+            - './docker/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+        networks:
+            - sail
+        healthcheck:
+            test: [CMD, mysqladmin, ping, '-p${DB_PASSWORD}']
+            retries: 3
+            timeout: 5s
 
-  dnsmasq:
-    image: dockurr/dnsmasq:latest
-    ports:
-      - "53:53/udp"
-      - "53:53/tcp"
-    networks:
-      - sail
-    cap_add:
-      - NET_ADMIN
-    restart: always
-    volumes:
-      - ./dnsmasq.conf:/etc/dnsmasq.conf
+    dnsmasq:
+        image: 'dockurr/dnsmasq:latest'
+        ports:
+            - '53:53/udp'
+            - '53:53/tcp'
+        networks:
+            - sail
+        cap_add:
+            - NET_ADMIN
+        restart: always
+        volumes:
+            - './dnsmasq.conf:/etc/dnsmasq.conf'
 
-  traefik:
-    image: traefik:latest
-    environment:
-      APP_SERVICE: ${APP_SERVICE}
-    command:
-      - "--configFile=/etc/traefik/traefik.yml"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./certs:/etc/traefik/certs:ro
-    networks:
-      - sail
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${APP_SERVICE}`)"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls=true"
-      - "traefik.http.routers.traefik.service=api@internal"
+    traefik:
+        image: 'traefik:latest'
+        environment:
+            APP_SERVICE: '${APP_SERVICE}'
+        command:
+            - '--configFile=/etc/traefik/traefik.yml'
+        ports:
+          - '80:80'
+          - '443:443'
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+            - './traefik.yml:/etc/traefik/traefik.yml:ro'
+            - './certs:/etc/traefik/certs:ro'
+        networks:
+            - sail
+        labels:
+            - traefik.enable=true
+            - 'traefik.http.routers.traefik.rule=Host(`traefik.${APP_SERVICE}`)'
+            - traefik.http.routers.traefik.entrypoints=websecure
+            - traefik.http.routers.traefik.tls=true
+            - traefik.http.routers.traefik.service=api@internal
 
 networks:
-  sail:
-    driver: bridge
+    sail:
+        driver: bridge
 
 volumes:
-  sail-mysql:
-    driver: local
+    sail-mysql:
+        driver: local

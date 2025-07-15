@@ -3,11 +3,12 @@ _This project corresponds to a small “skeleton” in order to have a key appli
 The project is based on the Laravel framework and its Docker management package, Sail.
 There are a few small steps to follow during installation, however, to get our application up and running._
 
-## Installation
-// Add some explanation...
-
 ## Environment
 // Add some explanation...
+
+## Installation
+// Add some explanation...
+// Note: migrate + key generate
 
 ## Certificate
 // Add some explanation...
