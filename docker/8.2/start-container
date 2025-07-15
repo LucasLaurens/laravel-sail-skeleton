@@ -15,6 +15,28 @@ fi
 
 chmod -R ugo+rw /.composer
 
+until mysqladmin ping -h "$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD" --silent; do
+  echo "Waiting for the MYSQL service to be ready..."
+  sleep 2
+done
+
+if ! php artisan migrate:status --no-ansi | grep -q '| Y'; then
+  echo "⚙️ First-time Laravel setup running..."
+
+  php artisan key:generate --force
+  echo "✅ Laravel app key has been generated successfully"
+
+  php artisan migrate:fresh --seed
+  echo "✅ Migrations has been run successfully"
+fi
+
+if [ ! -d node_modules ]; then
+    echo "📦 Download node modules package"
+    npm install
+    npm run build
+    echo "✅ Assets have been successfully loaded"
+fi
+
 if [ $# -gt 0 ]; then
     if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
         exec "$@"

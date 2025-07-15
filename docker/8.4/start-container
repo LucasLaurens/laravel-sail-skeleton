@@ -20,12 +20,8 @@ fi
 mkdir -p /.composer
 chmod -R ug+rw /.composer
 
-# ⏳ Wait for MySQL to be ready
-echo "Waiting for MySQL..."
-echo "DB_HOST: $DB_HOST"
-echo "DB_USERNAME: $DB_USERNAME"
 until mysqladmin ping -h "$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD" --silent; do
-  echo "Still waiting for MySQL..."
+  echo "Waiting for the MYSQL service to be ready..."
   sleep 2
 done
 
@@ -43,6 +39,7 @@ if [ ! -d node_modules ]; then
     echo "📦 Download node modules package"
     npm install
     npm run build
+    echo "✅ Assets have been successfully loaded"
 fi
 
 # ▶️ Run command if passed as arguments
