@@ -35,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureUrl();
         $this->configureVite();
         $this->registerPolicies();
+        $this->registerPermissions();
     }
     
     private function configureCommands(): void
@@ -71,5 +72,13 @@ class AppServiceProvider extends ServiceProvider
             User::class,
             UserPolicy::class
         );
+    }
+    
+    private function registerPermissions(): void
+    {
+        // uncomment when you need only specifics user can access to this route
+        // Gate::define('viewPulse', function (User $user) {
+        //   return $user->isAdmin();
+        // });
     }
 }
